@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A simple tool for gathering verification proof of contributions",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "dev": "ts-node src/index.ts",
     "dev2": "ts-node src/test.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,7 +16,6 @@
   ],
   "author": "Nikos Kontakis<wirednkod@gmail.com>",
   "license": "Apache-2.0",
-  "preinstall": "npx only-allow pnpm",
   "devDependencies": {
     "@types/node": "^20.12.7"
   },
