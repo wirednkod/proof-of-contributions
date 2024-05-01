@@ -11,6 +11,11 @@ The main functionality of this code revolves around two key functions:
 
 ### Installation
 
+This repository is using `pnpm`. In order to install all dependencies just run:
+```
+pnpm install
+```
+
 ### Usage
 To use these functions, first ensure that you have provided the necessary configuration details in .env file, including the GitHub username (`USERNAME`), start date (`START_DATE`), end date (`END_DATE`), and the (comma separated) target organizations (`ORGS`). Then, simply execute:
 
