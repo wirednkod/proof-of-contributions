@@ -7,9 +7,10 @@ import { authenticationHeader, endDate, startDate, username } from './config';
 const github_api = "https://api.github.com";
 
 const getAllGithubOrgRepositories = async (orgName: string): Promise<Repository[]> => {
+    let repositories: Repository[] = [];
     try {
         const response = await axios.get(`${github_api}/orgs/${orgName}/repos?type=public`, authenticationHeader);
-        const repositories: Repository[] = response.data.map((repo: any) => ({
+        repositories = response.data.map((repo: any) => ({
             name: repo.name,
             full_name: repo.full_name,
             html_url: repo.html_url,
@@ -19,38 +20,43 @@ const getAllGithubOrgRepositories = async (orgName: string): Promise<Repository[
         }));
         return repositories;
     } catch (error) {
-        throw new Error(`Failed to fetch repositories: ${error}`);
+        return repositories;
     }
 }
 
-export const getCommitsForContributor = async (orgName: string): Promise<Commit[] | number> => {
+export const getCommitsForContributor = async (orgName: string): Promise<[number, Commit[]]> => {
     try {
         const repositories = await getAllGithubOrgRepositories(orgName)
+        let commits: Commit[] = [];
         let commitsNumber: number = 0;
         let commitsForContributor: Commit[] = [];
         for (const repo of repositories) {
             const commitsUrl = `${github_api}/repos/${orgName}/${repo.name}/commits`;
-            const response = await axios.get(commitsUrl, {
-                ...authenticationHeader,
-                params: {
-                    author: username,
-                    since: startDate,
-                    until: endDate
-                }
-            })
-            const commits = response?.data;
-            commitsForContributor = (endDate && startDate) ? commits?.filter((c: CommitFilter) => {
-                const commitDate = new Date(c.commit.author.date);
-                return c?.author?.login === username && commitDate >= startDate && commitDate <= endDate;
-            }) : commits;
-            commitsNumber += commitsForContributor?.length;
+            try {
+                const response = await axios.get(commitsUrl, {
+                    ...authenticationHeader,
+                    params: {
+                        author: username,
+                        since: startDate,
+                        until: endDate
+                    }
+                })
+                commits.push(...response?.data);
+                commitsForContributor = (endDate && startDate) ? response?.data?.filter((c: CommitFilter) => {
+                    const commitDate = new Date(c.commit.author.date);
+                    return c?.author?.login === username && commitDate >= startDate && commitDate <= endDate;
+                }) : commits;
+                commitsNumber += commitsForContributor?.length;
+            } catch (err) {
+                console.log("No commits found")
+            }
         }
-        return commitsNumber;
+
+        return [commitsNumber, commits];
     } catch (error) {
         throw new Error(`Failed to fetch commits for contributor: ${error}`);
     }
 }
-
 
 export const getGithubContributions = async (orgName: string): Promise<number> => {
     let totalContributions = 0;
@@ -58,7 +64,14 @@ export const getGithubContributions = async (orgName: string): Promise<number> =
     try {
         for (const repo of repositories) {
             const url = `${github_api}/repos/${repo.full_name}/contributors`;
-            const response = await axios.get(url, authenticationHeader);
+            const response = await axios.get(url, {
+                ...authenticationHeader,
+                params: {
+                    author: username,
+                    since: startDate,
+                    until: endDate
+                }
+            })
             const contributors = response.data;
 
             const user = contributors.find ? contributors.find((contributor: any) => contributor.login === username) : undefined
